@@ -1,8 +1,8 @@
 'use strict';
 
 const torrentParser = require('./src/torrent-parser');
-const download = require('./src/download');
+const handleTorrent = require('./src/handle-torrent');
 
-const torrent = torrentParser.open('test1.torrent');
+const torrent = torrentParser.open('test2.torrent');
 
-download(torrent, torrent.info.name);
+handleTorrent(torrent, torrent.info.name);

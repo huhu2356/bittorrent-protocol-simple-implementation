@@ -2,32 +2,31 @@
 
 const net = require('net');
 const fs = require('fs');
-const tracker = require('./tracker');
+
+const udpTracker = require('./udp-tracker');
+const httpTracker = require('./http-tracker');
 const message = require('./message');
 const Pieces = require('./Pieces');
 const Queue = require('./Queue');
 
-module.exports = (torrent, path) => {
-  tracker.getPeers(torrent, peers => {
-    const pieces = new Pieces(torrent);
-    const file = fs.openSync(path, 'w');
-    // download(peers[2], torrent, pieces, file);
-    peers.forEach(peer => download(peer, torrent, pieces, file));
-  });
+module.exports = (torrent, path, peers) => {
+  const pieces = new Pieces(torrent);
+  const file = fs.openSync(path, 'w');
+  peers.forEach(peer => downloadFromPeer(peer, torrent, pieces, file));
 };
 
-function download(peer, torrent, pieces) {
+function downloadFromPeer(peer, torrent, pieces, file) {
   const socket = new net.Socket();
 
   socket.on('error', console.log);
 
   socket.connect(peer.port, peer.ip, () => {
-    console.log('connected to server !', peer);
+    console.log('connected to peer !', peer);
     socket.write(message.buildHandshake(torrent));
   });
 
   const queue = new Queue(torrent);
-  onWholeMsg(socket, msg => msgHandler(msg, socket, pieces, queue));
+  onWholeMsg(socket, msg => msgHandler(msg, socket, pieces, queue, file));
 }
 
 function onWholeMsg(socket, callback) {
@@ -35,19 +34,19 @@ function onWholeMsg(socket, callback) {
   let handshake = true;
 
   socket.on('data', recvBuf => {
+    savedBuf = Buffer.concat([savedBuf, recvBuf]);
     const msgLen = handshake ? savedBuf.readUInt8(0) + 49 :
       savedBuf.readInt32BE(0) + 4;
-    savedBuf = Buffer.concat([savedBuf, recvBuf]);
 
     while (savedBuf.length >= 4 && savedBuf.length >= msgLen) {
-      callback(savedBuf.slice(0, msgLen()));
-      savedBuf = savedBuf.slice(msgLen());
+      callback(savedBuf.slice(0, msgLen));
+      savedBuf = savedBuf.slice(msgLen);
       handshake = false;
     }
   });
 }
 
-function msgHandler(msg, socket, pieces, queue) {
+function msgHandler(msg, socket, pieces, queue, file) {
   if (isHandshake(msg)) {
     socket.write(message.buildInterested());
   } else {
@@ -79,11 +78,11 @@ function isHandshake(msg) {
     msg.toString('utf8', 1) === 'BitTorrent protocol';
 }
 
-function chokeHandler() {
+function chokeHandler(socket) {
   socket.end();
 }
 
-function unchokeHandler() {
+function unchokeHandler(socket, pieces, queue) {
   queue.choked = false;
   requestPiece(socket, pieces, queue);
 }
@@ -116,7 +115,7 @@ function pieceHandler(socket, pieces, queue, torrent, file, pieceResp) {
   pieces.addReceived(pieceResp);
 
   const offset = pieceResp.index * torrent.info['piece length'] + pieceResp.begin;
-  fs.writeSync(file, pieceResp.block, 0, pieceResp.block.length, offset, () => {});
+  fs.writeSync(file, pieceResp.block, 0, pieceResp.block.length, offset, () => { });
 
   if (pieces.isDone()) {
     socket.end();

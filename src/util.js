@@ -13,7 +13,7 @@ module.exports.genId = () => {
 };
 
 module.exports.group = (iterable, groupSize) => {
-  let groups = [];
+  const groups = [];
   for (let i = 0; i < iterable.length; i += groupSize) {
     groups.push(iterable.slice(i, i + groupSize));
   }

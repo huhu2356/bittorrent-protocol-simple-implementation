@@ -1,37 +1,41 @@
 'use strict';
 
 const dgram = require('dgram');
-const Buffer = require('buffer').Buffer;
 const urlParse = require('url').parse;
 const crypto = require('crypto');
+
 const util = require('./util');
 const torrentParser = require('./torrent-parser');
 
-module.exports.getPeers = (torrent, callback) => {
-  const socket = dgram.createSocket('udp4');
-  const url = torrent.announce.toString('utf8');
+module.exports.getPeers = (torrent) => {
+  return new Promise((resolve) => {
+    const socket = dgram.createSocket('udp4');
+    const url = torrent.announce.toString('utf8');
 
-  udpSend(socket, buildConnReq(), url);
+    udpSend(socket, buildConnReq(), url);
 
-  socket.on('message', response => {
-    if (respType(response) === 'connect') {
-      // 2. receive and parse connect response
-      const connResp = parseConnResp(response);
-      // 3. send announce request
-      const announceReq = buildAnnounceReq(connResp.connectionId, torrent);
-      udpSend(socket, announceReq, url);
-    } else if (respType(response) === 'announce') {
-      // 4. parse announce response
-      const announceResp = parseAnnounceResp(response);
-      // 5. pass peers to callback
-      callback(announceResp.peers);
-    }
+    socket.on('message', response => {
+      if (respType(response) === 'connect') {
+        // 2. receive and parse connect response
+        const connResp = parseConnResp(response);
+        // 3. send announce request
+        const announceReq = buildAnnounceReq(connResp.connectionId, torrent);
+        udpSend(socket, announceReq, url);
+      } else if (respType(response) === 'announce') {
+        // 4. parse announce response
+        const announceResp = parseAnnounceResp(response);
+        // 5. pass peers
+        resolve(announceResp.peers);
+      }
+    });
   });
 };
 
 function udpSend(socket, message, rawUrl, callback = () => { }) {
   const url = urlParse(rawUrl);
-  socket.send(message, url.port, url.hostname, callback);
+  socket.send(message, url.port, url.hostname, () => {
+    console.log(url.port, url.host);
+  });
 }
 
 function respType(resp) {

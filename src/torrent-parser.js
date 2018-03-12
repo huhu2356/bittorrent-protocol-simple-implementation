@@ -9,7 +9,8 @@ module.exports.open = (filepath) => {
   return bencode.decode(fs.readFileSync(filepath));
 };
 
-module.exports.size = torrent => {
+// get total file(s) size
+module.exports.size = (torrent) => {
   const totalsize = torrent.info.files ?
     torrent.info.files.map(file => file.length).reduce((acc, cur) => acc + cur) :
     torrent.info.length;
@@ -34,7 +35,7 @@ module.exports.pieceLen = (torrent, pieceIndex) => {
 
   const lastPieceIndex = Math.floor(totalLength / pieceLength);
 
-  return lastPieceIndex === pieceIndex ? lastPieceIndex : pieceLength;
+  return pieceIndex === lastPieceIndex ? lastPieceLength : pieceLength;
 };
 
 module.exports.blocksPerPiece = (torrent, pieceIndex) => {
@@ -43,7 +44,7 @@ module.exports.blocksPerPiece = (torrent, pieceIndex) => {
 };
 
 module.exports.blockLen = (torrent, pieceIndex, blockIndex) => {
-  const pieceLen = this.pieceLen(torrent, pieceIndex);
+  const pieceLength = this.pieceLen(torrent, pieceIndex);
 
   const lastBlockLength = pieceLength % this.BLOCK_LEN;
   if (lastBlockLength === 0) {

@@ -1,6 +1,5 @@
 'use strict';
 
-const Buffer = require('buffer').Buffer;
 const torrentParser = require('./torrent-parser');
 const util = require('./util');
 
@@ -13,12 +12,12 @@ module.exports.parse = msg => {
       index: payload.readUInt32BE(0),
       begin: payload.readUInt32BE(4)
     };
-    payload[id == 7 ? 'block' : 'length'] = rest;
+    payload[id === 7 ? 'block' : 'length'] = rest;
   }
 
   return {
-    size : msg.readUInt32BE(0),
-    id : id,
+    size: msg.readUInt32BE(0),
+    id: id,
     payload: payload
   };
 };

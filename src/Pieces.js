@@ -14,12 +14,12 @@ module.exports = class {
     this._received = buildPiecesArray();
   }
 
-  addRequested(peiceBlock) {
+  addRequested(pieceBlock) {
     const blockIndex = pieceBlock.begin / torrentParser.BLOCK_LEN;
     this._requested[pieceBlock.index][blockIndex] = true;
   }
 
-  addReceived(peiceBlock) {
+  addReceived(pieceBlock) {
     const blockIndex = pieceBlock.begin / torrentParser.BLOCK_LEN;
     this._received[pieceBlock.index][blockIndex] = true;
   }

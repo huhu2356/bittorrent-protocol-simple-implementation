@@ -1,6 +1,4 @@
 /node_modules
 /.vscode
-localclient.js
-localserver.js
+/test
 *.torrent
-test.js
